@@ -1,0 +1,42 @@
+users:
+    class: User
+    comment: "Someone who works on tasks"
+    searchable:
+        - name
+        - email
+    override:
+        api_token:
+            access: w       # a query can't reach it in any way, not even to guess it
+    hasMany:
+        tasks:
+            through: assignee_id
+
+projects:
+    class: Project
+    comment: "A set of tasks"
+    searchable:
+        - name
+    override:
+        created_at:
+            type: '\DateTime'
+    references:
+        owner_id: { name: owner }
+    hasMany:
+        tasks:
+            through: project_id
+        openTasks:
+            table: tasks
+            through: project_id
+            condition: "status <> 'done'"
+
+tasks:
+    class: Task
+    comment: "One thing to do"
+    searchable:
+        - title
+    override:
+        due_date:
+            type: '\DateTime'
+    references:
+        project_id: { name: project }
+        assignee_id: { name: assignee }

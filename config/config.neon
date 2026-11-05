@@ -1,0 +1,68 @@
+extensions:
+    entityDatabase: Phlox\EntityDatabase\DI\Extension
+    apiQuery: Phlox\ApiQuery\DI\Extension
+    restApi: Phlox\RestApi\DI\Extension
+    rpcApi: Phlox\RpcApi\DI\Extension
+
+database:
+    default:
+        dsn: 'sqlite:%dataDir%/app.db'
+
+entityDatabase:
+    connections:
+        default:
+            entities:
+                namespace: App\Entity
+                output: %appDir%/Entity
+                config: [%appDir%/../config/entities.neon]
+
+# What a query can reach of entities, for the whole application.
+# Controllers need no attribute, unless one of them differs.
+apiQuery:
+    maxPageSize: 100
+    entities:
+        App\Entity\Project:
+            relations: [owner, tasks, openTasks]
+        App\Entity\Task:
+            relations: [project, assignee]
+            computed:
+                canEdit: bool       # added by App\Api\QueryListener
+        App\Entity\User:
+            relations: []
+
+restApi:
+    endpoints:
+        'api/v1':
+            namespace: App\Api\Rest
+            accessControl:
+                allowedOrigins: ['https://app.example.com']
+                allowCredentials: true
+                allowHeaders: [authorization, content-type]
+            documentation:
+                expose: true        # GET /api/v1/openapi.json and /api/v1/openapi.yaml
+                info:
+                    title: Sample API
+                    version: 1.0.0
+                securitySchemes:
+                    bearerAuth: {type: http, scheme: bearer}
+
+rpcApi:
+    endpoints:
+        'rpc':
+            namespace: App\Api\Rpc
+            documentation:
+                expose: true        # the method rpc.discover
+                info:
+                    title: Sample RPC API
+                    version: 1.0.0
+
+services:
+    # A token instead of a session, for every request
+    security.userStorage: App\Security\TokenStorage
+
+    - App\Api\QueryListener
+
+    - App\Api\Rest\ProjectController
+    - App\Api\Rest\TaskController
+    - App\Api\Rest\ReportController
+    - App\Api\Rpc\StatsController

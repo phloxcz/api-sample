@@ -1,0 +1,46 @@
+{
+    "name": "phloxcz/api-sample",
+    "description": "Sample application of the Phlox API libraries: REST, JSON-RPC, the query language, DTOs and generated documentation.",
+    "type": "project",
+    "license": "MIT",
+    "repositories": [
+        { "type": "path", "url": "../phlox-api-core", "options": { "versions": { "phloxcz/api-core": "0.1.x-dev" } } },
+        { "type": "path", "url": "../phlox-api-query", "options": { "versions": { "phloxcz/api-query": "0.1.x-dev" } } },
+        { "type": "path", "url": "../phlox-entity-database", "options": { "versions": { "phloxcz/entity-database": "0.1.x-dev" } } },
+        { "type": "path", "url": "../phlox-rest-api", "options": { "versions": { "phloxcz/rest-api": "0.1.x-dev" } } },
+        { "type": "path", "url": "../phlox-rpc-api", "options": { "versions": { "phloxcz/rpc-api": "0.1.x-dev" } } }
+    ],
+    "require": {
+        "php": ">=8.4",
+        "ext-pdo_sqlite": "*",
+        "nette/application": "^3.2",
+        "nette/bootstrap": "^3.2",
+        "nette/caching": "^3.2",
+        "nette/database": "^3.2",
+        "nette/security": "^3.2",
+        "phloxcz/api-core": "^0.1@dev",
+        "phloxcz/api-query": "^0.1@dev",
+        "phloxcz/entity-database": "^0.1@dev",
+        "phloxcz/rest-api": "^0.1@dev",
+        "phloxcz/rpc-api": "^0.1@dev",
+        "tracy/tracy": "^2.10"
+    },
+    "require-dev": {
+        "nette/tester": "^2.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    },
+    "scripts": {
+        "setup": "php bin/init-db.php",
+        "serve": "php -S localhost:8000 -t www www/index.php",
+        "test": "tester tests -C -j 1"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "config": {
+        "sort-packages": true
+    }
+}
