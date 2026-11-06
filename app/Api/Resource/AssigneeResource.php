@@ -7,10 +7,10 @@ namespace App\Api\Resource;
 use App\Entity\User;
 use Phlox\ApiQuery\Attributes\Resource;
 
-#[Resource(User::class)]
-final readonly class AssigneeResource
+/**
+ * Only these fields, whatever else the table gets. Their types come from the entity.
+ */
+#[Resource(User::class, fields: ['id', 'name'])]
+final class AssigneeResource
 {
-    public function __construct(public int $id, public string $name)
-    {
-    }
 }
