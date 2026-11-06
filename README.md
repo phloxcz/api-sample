@@ -1,5 +1,7 @@
 # Phlox API sample
 
+**English** | [Česky](README.cs.md)
+
 A small application using the Phlox API libraries together: REST and JSON-RPC, the query language over entities and resources, DTOs with validation, and generated documentation. `tests/SmokeTest.phpt` runs all of it over real HTTP.
 
 ## Running it
@@ -34,6 +36,7 @@ curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"
 | A shared base controller, with events for every query | [`BaseController`](app/Api/Rest/BaseController.php) |
 | Access control and computed fields at every level | [`QueryListener`](app/Api/QueryListener.php) |
 | Clients shielded from the entity: a resource and a DTO with validation | [`TaskController`](app/Api/Rest/TaskController.php), [`TaskResource`](app/Api/Resource/TaskResource.php), [`CreateTask`](app/Api/Resource/CreateTask.php) |
+| Saving: POST, PUT, PATCH, and a collection in one transaction | `create()`, `replace()`, `change()` and `batch()` of [`TaskController`](app/Api/Rest/TaskController.php), [`ImportTasks`](app/Api/Resource/ImportTasks.php) |
 | A body streamed by the method, and a small file as a parameter | `attach()` and `picture()` of [`TaskController`](app/Api/Rest/TaskController.php) |
 | A method writing the response itself, from a selection narrowed by a query | [`ReportController`](app/Api/Rest/ReportController.php) |
 | Logging in by a token, with no session | [`TokenStorage`](app/Security/TokenStorage.php) |
