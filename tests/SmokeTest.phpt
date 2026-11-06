@@ -134,6 +134,89 @@ Assert::same('open', $json['status'], 'what the DTO does not declare can not get
 Assert::same(422, $status);
 Assert::same(['title' => 'must have at least 3 characters.', 'priority' => 'must be at most 5.'], $json['error']['fields']);
 
+// --- Saving: PUT replaces, PATCH changes what's sent
+
+[$status, , , $created] = $http('POST', "{$api}/projects/1/tasks", ['title' => 'To change', 'priority' => 4, 'dueDate' => '2024-05-06']);
+$task = "{$api}/projects/1/tasks/{$created['id']}";
+
+[$status, , , $json] = $http('PATCH', $task, ['priority' => 2, 'status' => 'done', 'id' => 1]);
+Assert::same(200, $status);
+Assert::same(2, $json['priority']);
+Assert::same('To change', $json['name'], 'what was not sent stays');
+Assert::same($created['dueDate'], $json['dueDate']);
+Assert::same('open', $json['status'], 'what the DTO does not declare can not get in');
+Assert::same($created['id'], $json['id']);
+
+[$status, , , $json] = $http('PATCH', $task, ['dueDate' => null]);
+Assert::same(200, $status);
+Assert::null($json['dueDate'], 'null clears it');
+Assert::same(2, $json['priority']);
+
+[$status, , , $json] = $http('PATCH', $task, ['dueDate' => '2025-01-02']);
+Assert::same(200, $status);
+Assert::contains('2025-01-02', $json['dueDate'], 'a date');
+
+[$status, , , $json] = $http('PATCH', $task, []);
+Assert::same(200, $status, 'nothing to change is fine');
+
+[$status, , , $json] = $http('PATCH', $task, ['title' => null, 'priority' => 9]);
+Assert::same(422, $status);
+Assert::same(['title', 'priority'], array_keys($json['error']['fields']));
+
+[$status, , , $json] = $http('PATCH', $task, ['title' => ['a']]);
+Assert::same(422, $status, 'a wrong type is the client\'s error');
+
+[$status, , , $json] = $http('PATCH', $task, [1, 2]);
+Assert::same(422, $status);
+
+[$status] = $http('PATCH', "{$api}/projects/1/tasks/99999", ['priority' => 1]);
+Assert::same(404, $status);
+
+[$status] = $http('PATCH', "{$api}/projects/2/tasks/{$created['id']}", ['priority' => 1]);
+Assert::same(404, $status, 'a task of another project');
+
+[$status, , , $json] = $http('PUT', $task, ['title' => 'Replaced']);
+Assert::same(200, $status);
+Assert::same('Replaced', $json['name']);
+Assert::same(1, $json['priority'], 'what was not sent gets its default');
+Assert::null($json['dueDate']);
+
+[$status, , , $json] = $http('PUT', $task, ['priority' => 3]);
+Assert::same(422, $status);
+Assert::same(['title' => 'is required.'], $json['error']['fields'], 'PUT needs all that is required');
+
+[$status, , , $json] = $http('PATCH', "{$task}?query[select]=name", ['priority' => 5]);
+Assert::same('Replaced', $json['name'], 'the answer can be narrowed down');
+Assert::false(isset($json['priority']));
+
+// --- A collection in a DTO
+
+[$status, , , $json] = $http('POST', "{$api}/projects/1/tasks/batch", ['tasks' => [['title' => 'First one', 'priority' => 2], ['title' => 'Second one']]]);
+Assert::same(201, $status);
+Assert::count(2, $json['ids']);
+Assert::same(2, $http('GET', "{$api}/projects/1/tasks/{$json['ids'][0]}")[3]['priority'] ?? 2);
+
+$tasksBefore = $http('POST', "{$api}/projects/1/tasks/query", ['select' => 'id'])[3]['total'];
+
+[$status, , , $json] = $http('POST', "{$api}/projects/1/tasks/batch", ['tasks' => [['title' => 'Fine one'], ['title' => 'x', 'priority' => 9], ['priority' => 1]]]);
+Assert::same(422, $status);
+Assert::same(['tasks.1.title', 'tasks.1.priority', 'tasks.2.title'], array_keys($json['error']['fields']), 'each row, with its position');
+
+[$status, , , $json] = $http('POST', "{$api}/projects/1/tasks/batch", ['tasks' => []]);
+Assert::same(422, $status);
+Assert::same(['tasks' => 'must have at least 1 items.'], $json['error']['fields']);
+
+[$status, , , $json] = $http('POST', "{$api}/projects/1/tasks/batch", ['tasks' => 'none']);
+Assert::same(422, $status, 'not a list');
+
+Assert::same($tasksBefore, $http('POST', "{$api}/projects/1/tasks/query", ['select' => 'id'])[3]['total'], 'nothing is saved of what was refused');
+
+$openApi = $http('GET', "{$api}/openapi.json")[3];
+$patch = $openApi['paths']['/projects/{projectId}/tasks/{id}']['patch']['requestBody']['content']['application/json']['schema'] ?? null;
+Assert::same(['$ref' => '#/components/schemas/CreateTask_Patch'], $patch);
+Assert::same(['title'], $openApi['components']['schemas']['CreateTask']['required']);
+Assert::false(isset($openApi['components']['schemas']['CreateTask_Patch']['required']));
+
 // --- Bodies
 
 [$status, , , $json] = $http('POST', "{$api}/projects/1/tasks/1/attachment", 'binary data', type: 'application/octet-stream');
