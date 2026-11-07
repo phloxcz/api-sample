@@ -25,6 +25,7 @@ curl -X POST -H "Authorization: Bearer token-of-ann" -H "Content-Type: applicati
 curl http://localhost:8000/api/v1/openapi.yaml    # and Swagger UI at http://localhost:8000/api/v1/openapi
 
 curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"rpc.discover","id":1}' http://localhost:8000/rpc
+curl http://localhost:8000/rpc/openrpc.json    # the same, and a page for OpenRPC Playground at /rpc/openrpc
 ```
 
 ## Where to look

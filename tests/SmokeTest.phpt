@@ -290,6 +290,22 @@ Assert::same([['name' => 'Design the home page']], $json['result']['data']);
 Assert::same('1.3.2', $json['result']['openrpc']);
 Assert::same('stats.tasks', $json['result']['methods'][0]['name']);
 
+// The same document for GET, which tools like OpenRPC Playground read, and a page opening it there
+[$status, , $headers, $document] = $http('GET', '/rpc/openrpc.json', token: null);
+Assert::same(200, $status);
+Assert::contains('application/json', $headers['content-type']);
+Assert::same($json['result'], $document, 'what rpc.discover gives');
+
+[$status, $page, $headers] = $http('GET', '/rpc/openrpc', token: null);
+Assert::same(200, $status);
+Assert::contains('text/html', $headers['content-type']);
+Assert::contains('<title>Sample RPC API</title>', $page);
+Assert::contains("'https://playground.open-rpc.org/?schemaUrl=' + encodeURIComponent(documentUrl)", $page);
+Assert::contains('new URL("openrpc.json", location.href)', $page);
+
+[$status] = $http('GET', '/rpc/elsewhere', token: null);
+Assert::same(404, $status, 'any other GET goes to the application');
+
 // --- Documents
 
 [$status, $openApiText, $headers, $openApi] = $http('GET', "{$api}/openapi.json", token: null);

@@ -43,7 +43,7 @@ rpcApi:
         'rpc':
             namespace: App\Api\Rpc
             documentation:
-                expose: true        # the method rpc.discover
+                expose: true        # the method rpc.discover, GET /rpc/openrpc.json, and the page at /rpc/openrpc
                 info:
                     title: Sample RPC API
                     version: 1.0.0
