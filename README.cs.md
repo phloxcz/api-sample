@@ -38,7 +38,10 @@ curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"
 | Klienti odstínění od entity: Resource a DTO s validací | [`TaskController`](app/Api/Rest/TaskController.php), [`TaskResource`](app/Api/Resource/TaskResource.php), [`CreateTask`](app/Api/Resource/CreateTask.php) |
 | Ukládání: POST, PUT, PATCH a kolekce v jedné transakci | `create()`, `replace()`, `change()` a `batch()` v [`TaskController`](app/Api/Rest/TaskController.php), [`ImportTasks`](app/Api/Resource/ImportTasks.php) |
 | Tělo streamované metodou a malý soubor jako parametr | `attach()` a `picture()` v [`TaskController`](app/Api/Rest/TaskController.php) |
+| Soubor z HTML formuláře a hlavička | `document()` v [`TaskController`](app/Api/Rest/TaskController.php) |
 | Metoda, která zapisuje odpověď sama, z výběru zúženého dotazem | [`ReportController`](app/Api/Rest/ReportController.php) |
+| Odpovědi popsané objekty: stránka v obálce, seznam, počty podle klíče | `#[Response]` v [`ProjectController`](app/Api/Rest/ProjectController.php) a [`TaskController`](app/Api/Rest/TaskController.php) |
+| Každá odpověď smoke testu ověřená proti dokumentaci | [`ResponseChecker`](tests/ResponseChecker.php) |
 | Přihlášení tokenem bez session | [`TokenStorage`](app/Security/TokenStorage.php) |
 | Stejný dotaz přes JSON-RPC | [`StatsController`](app/Api/Rpc/StatsController.php) |
 | Tajemství, na která dotaz nedosáhne, a podmínka relace | [`config/entities.neon`](config/entities.neon) |

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Api\Rest;
 
 use Phlox\ApiCore\Attributes\Authorize;
+use Phlox\ApiCore\Schema\Binary;
 use Phlox\ApiQuery\Query;
 use Phlox\RestApi\Attributes\FromBody;
 use Phlox\RestApi\Attributes\HttpPost;
@@ -24,7 +25,7 @@ class ReportController extends BaseController
      */
     #[HttpPost]
     #[Route('tasks')]
-    #[Response(200, '@binary', 'text/csv')]
+    #[Response(200, new Binary, 'text/csv')]
     public function tasks(#[FromBody] ?Query $query = null): void
     {
         $tasks = $this->db->table('tasks');

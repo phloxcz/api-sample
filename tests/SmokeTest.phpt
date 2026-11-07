@@ -31,11 +31,15 @@ for ($i = 0; $i < 50 && !@fsockopen('127.0.0.1', $port); $i++) {
     usleep(100_000);
 }
 
+require __DIR__ . '/ResponseChecker.php';
+
+$api = '/api/v1';
+$checker = null;
+
 /**
  * @return array{int, string, array<string, string>, mixed}
  */
-$http = static function (string $method, string $path, mixed $body = null, ?string $token = 'token-of-ann', string $type = 'application/json') use ($port): array {
-    $headers = [];
+$http = static function (string $method, string $path, mixed $body = null, ?string $token = 'token-of-ann', string $type = 'application/json', array $headers = []) use ($port, $api, &$checker): array {
     if ($token !== null) {
         $headers[] = "Authorization: Bearer {$token}";
     }
@@ -60,10 +64,24 @@ $http = static function (string $method, string $path, mixed $body = null, ?stri
         }
     }
 
-    return [(int) ($status[1] ?? 0), (string) $text, $received, json_decode((string) $text, true)];
+    $result = [(int) ($status[1] ?? 0), (string) $text, $received, json_decode((string) $text, true)];
+
+    // Every response of the API is checked against its documentation
+    if ($checker !== null && str_starts_with($path, $api)) {
+        $checker->checkRest($method, $path, $result[0], $received, $result[1]);
+    }
+    if ($checker !== null && $path === '/rpc' && is_array($body) && ($body['method'] ?? '') !== 'rpc.discover' && is_array($result[3]) && array_key_exists('result', $result[3])) {
+        $checker->checkRpc($body['method'], $result[3]['result']);
+    }
+
+    return $result;
 };
 
-$api = '/api/v1';
+$checker = new ResponseChecker(
+    $http('GET', "{$api}/openapi.json", token: null)[3],
+    $http('POST', '/rpc', ['jsonrpc' => '2.0', 'method' => 'rpc.discover', 'id' => 1], token: null)[3]['result'],
+    $api,
+);
 
 // --- Entities, with the wrapper of the application
 
@@ -194,7 +212,8 @@ Assert::false(isset($json['priority']));
 [$status, , , $json] = $http('POST', "{$api}/projects/1/tasks/batch", ['tasks' => [['title' => 'First one', 'priority' => 2], ['title' => 'Second one']]]);
 Assert::same(201, $status);
 Assert::count(2, $json['ids']);
-Assert::same(2, $http('GET', "{$api}/projects/1/tasks/{$json['ids'][0]}")[3]['priority'] ?? 2);
+$saved = $http('POST', "{$api}/projects/1/tasks/query", ['select' => 'priority', 'filter' => ['field' => 'id', 'value' => $json['ids'][0]]])[3];
+Assert::same(2, $saved['data'][0]['priority'], 'saved as sent');
 
 $tasksBefore = $http('POST', "{$api}/projects/1/tasks/query", ['select' => 'id'])[3]['total'];
 
@@ -227,6 +246,22 @@ Assert::same(11, $json['bytes'], 'a stream the method reads itself');
 Assert::same(5, $json['bytes']);
 [$status] = $http('POST', "{$api}/projects/1/tasks/1/picture", 'text', type: 'text/plain');
 Assert::same(415, $status);
+[$status] = $http('POST', "{$api}/projects/1/tasks/1/attachment", '{}');
+Assert::same(415, $status, 'a stream, but of the type it takes');
+
+// A file from a form, and a header
+$multipart = static fn(array $parts): string => implode('', array_map(
+    static fn(array $part): string => "--x\r\nContent-Disposition: form-data; name=\"{$part[0]}\"" . (isset($part[2]) ? "; filename=\"{$part[2]}\"\r\nContent-Type: application/pdf" : '') . "\r\n\r\n{$part[1]}\r\n",
+    $parts,
+)) . "--x--\r\n";
+
+[$status, , , $json] = $http('POST', "{$api}/projects/1/tasks/1/document", $multipart([['file', '%PDF-1', 'report.pdf'], ['note', 'Signed']]), type: 'multipart/form-data; boundary=x', headers: ['X-Request-Id: r-42']);
+Assert::same(200, $status);
+Assert::same(['task' => 1, 'name' => 'report.pdf', 'bytes' => 6, 'requestId' => 'r-42', 'note' => 'Signed'], $json);
+
+[$status, , , $json] = $http('POST', "{$api}/projects/1/tasks/1/document", $multipart([['note', 'No file']]), type: 'multipart/form-data; boundary=x');
+Assert::same(422, $status);
+Assert::same(['file' => 'is required.'], $json['error']['fields']);
 
 [$status, , , $json] = $http('GET', "{$api}/projects/1/tasks/summary");
 Assert::same(200, $status);
@@ -292,3 +327,16 @@ file_put_contents($root . '/temp/openrpc.json', json_encode($rpc(['method' => 'r
 
 [$status] = $http('GET', '/somewhere/else', token: null);
 Assert::same(404, $status);
+
+// --- What came matches what the documents say
+
+Assert::same([], $checker->errors);
+Assert::true($checker->checked >= 35, "only {$checker->checked} responses checked");
+
+// It does see a difference
+$page = $openApi['paths']['/projects']['get']['responses'][200]['content']['application/json']['schema'];
+Assert::same([], ResponseChecker::validate(['value' => ['data' => [], 'total' => 0, 'page' => 1, 'pageSize' => 10, 'from' => null, 'to' => null]], $page, $openApi, 'x'));
+Assert::same(
+    ["x.value: 'from' is missing", 'x.value.data[0].name: 5 is not string', 'x.value.total: "2" is not integer'],
+    ResponseChecker::validate(['value' => ['data' => [['name' => 5]], 'total' => '2', 'page' => 1, 'pageSize' => 10, 'to' => null]], $page, $openApi, 'x'),
+);

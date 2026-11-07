@@ -7,6 +7,8 @@ namespace App\Api\Rest;
 use App\Entity\Project;
 use Phlox\ApiCore\ApiException;
 use Phlox\ApiCore\Attributes\Authorize;
+use Phlox\ApiCore\Schema\Paged;
+use Phlox\ApiCore\Schema\Shape;
 use Phlox\ApiQuery\Query;
 use Phlox\RestApi\Attributes\FromBody;
 use Phlox\RestApi\Attributes\HttpGet;
@@ -26,7 +28,7 @@ class ProjectController extends BaseController
      */
     #[HttpGet]
     #[Route('')]
-    #[Response(200, ['object', ['value' => ['@pager', Project::class]]])]
+    #[Response(200, new Shape(['value' => new Paged(Project::class)]))]
     public function list(?Query $query = null): array
     {
         return $this->output($this->processor->process($this->db->table('projects'), $query));
@@ -37,7 +39,7 @@ class ProjectController extends BaseController
      */
     #[HttpPost]
     #[Route('query')]
-    #[Response(200, ['object', ['value' => ['@pager', Project::class]]])]
+    #[Response(200, new Shape(['value' => new Paged(Project::class)]))]
     public function query(#[FromBody] ?Query $query = null): array
     {
         return $this->list($query);
@@ -50,12 +52,12 @@ class ProjectController extends BaseController
      */
     #[HttpGet]
     #[Route('{id:int}')]
-    #[Response(200, ['object', ['value' => Project::class]])]
-    #[Response(404, '@error', description: 'No such project')]
+    #[Response(200, new Shape(['value' => Project::class]))]
+    #[Response(404, description: 'No such project')]
     public function detail(int $id, ?Query $query = null): array
     {
         $project = $this->db->table('projects')->get($id)
-            ?? throw new ApiException(404, "Project {$id} not found.", httpCode: 404);
+            ?? throw new ApiException(404, "Project {$id} not found.");
 
         return $this->output($this->processor->process($project, $query));
     }

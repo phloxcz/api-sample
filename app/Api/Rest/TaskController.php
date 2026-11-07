@@ -8,16 +8,22 @@ use App\Api\Resource\CreateTask;
 use App\Api\Resource\ImportTasks;
 use App\Api\Resource\TaskResource;
 use App\Entity\Task;
+use Nette\Http\FileUpload;
 use Phlox\ApiCore\ApiException;
 use Phlox\ApiCore\Attributes\Authorize;
 use Phlox\ApiCore\Attributes\PatchOf;
 use Phlox\ApiCore\Attributes\Throws;
 use Phlox\ApiCore\Patch;
+use Phlox\ApiCore\Schema\ListOf;
+use Phlox\ApiCore\Schema\MapOf;
+use Phlox\ApiCore\Schema\Shape;
 use Phlox\ApiQuery\Attributes\QueryOf;
 use Phlox\ApiQuery\Query;
 use Phlox\EntityDatabase\Database\Explorer;
 use Phlox\RestApi\Attributes\Consumes;
 use Phlox\RestApi\Attributes\FromBody;
+use Phlox\RestApi\Attributes\FromForm;
+use Phlox\RestApi\Attributes\FromHeader;
 use Phlox\RestApi\Attributes\HttpGet;
 use Phlox\RestApi\Attributes\HttpPatch;
 use Phlox\RestApi\Attributes\HttpPost;
@@ -48,7 +54,7 @@ class TaskController extends BaseController
     #[HttpPost]
     #[Route('')]
     #[Response(201)]
-    #[Throws(1001, 'The project is closed.', httpCode: 409)]
+    #[Throws(409, 'The project is closed.', errorCode: 1001)]
     public function create(int $projectId, #[FromBody] CreateTask $task, #[QueryOf(TaskResource::class, single: true)] ?Query $query = null): ?array
     {
         $created = $this->db->table('tasks')->insert([
@@ -65,12 +71,10 @@ class TaskController extends BaseController
 
     /**
      * Creates several tasks, all of them or none.
-     *
-     * @return array{ids: list<int>}
      */
     #[HttpPost]
     #[Route('batch')]
-    #[Response(201)]
+    #[Response(201, new Shape(['ids' => new ListOf('int')]))]
     public function batch(int $projectId, #[FromBody] ImportTasks $import): array
     {
         $ids = $this->db->transaction(static function (Explorer $db) use ($projectId, $import): array {
@@ -123,7 +127,7 @@ class TaskController extends BaseController
     private function findTask(int $projectId, int $id): Task
     {
         return $this->db->table('tasks')->where('project_id', $projectId)->get($id)
-            ?? throw new ApiException(404, 'The task was not found.', httpCode: 404);
+            ?? throw new ApiException(404, 'The task was not found.');
     }
 
     /**
@@ -131,6 +135,8 @@ class TaskController extends BaseController
      */
     #[HttpPost]
     #[Route('{id:int}/attachment')]
+    #[Consumes('application/octet-stream')]
+    #[Response(200, new Shape(['task' => 'int', 'bytes' => 'int']))]
     public function attach(int $projectId, int $id): array
     {
         $bytes = stream_copy_to_stream(fopen('php://input', 'rb'), fopen('php://temp', 'wb'));
@@ -139,11 +145,30 @@ class TaskController extends BaseController
     }
 
     /**
+     * Takes a file from an HTML form, with a note and the ID of the request.
+     */
+    #[HttpPost]
+    #[Route('{id:int}/document')]
+    #[Response(200, new Shape(['task' => 'int', 'name' => 'string', 'bytes' => 'int', 'requestId' => '?string', 'note?' => 'string']))]
+    public function document(
+        int $projectId,
+        int $id,
+        #[FromForm] FileUpload $file,
+        #[FromForm] ?string $note = null,
+        #[FromHeader('X-Request-Id')] ?string $requestId = null,
+    ): array {
+        $result = ['task' => $id, 'name' => $file->getUntrustedName(), 'bytes' => $file->getSize(), 'requestId' => $requestId];
+
+        return $note === null ? $result : $result + ['note' => $note];
+    }
+
+    /**
      * Takes a small file right as a parameter.
      */
     #[HttpPost]
     #[Route('{id:int}/picture')]
     #[Consumes('image/*')]
+    #[Response(200, new Shape(['task' => 'int', 'bytes' => 'int']))]
     public function picture(int $projectId, int $id, #[FromBody] string $content): array
     {
         return ['task' => $id, 'bytes' => strlen($content)];
@@ -151,11 +176,10 @@ class TaskController extends BaseController
 
     /**
      * Counts tasks by their status.
-     *
-     * @return array<string, int>
      */
     #[HttpGet]
     #[Route('summary')]
+    #[Response(200, new MapOf('int'))]
     public function summary(int $projectId): array
     {
         return $this->db->table('tasks')->where('project_id', $projectId)
