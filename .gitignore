@@ -1,6 +1,8 @@
 /vendor/
 /composer.lock
-/temp/
+/temp/*
+!/temp/.gitkeep
 /data/
-/log/
+/log/*
+!/log/.gitkeep
 /tests/output/
