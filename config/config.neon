@@ -31,7 +31,7 @@ restApi:
                 allowCredentials: true
                 allowHeaders: [authorization, content-type]
             documentation:
-                expose: true        # GET /api/v1/openapi.json and /api/v1/openapi.yaml
+                expose: true        # GET /api/v1/openapi.json, /api/v1/openapi.yaml, and Swagger UI at /api/v1/openapi
                 info:
                     title: Sample API
                     version: 1.0.0

@@ -326,6 +326,10 @@ file_put_contents($root . '/temp/openapi.json', $openApiText);
 [$status, $yaml] = $http('GET', "{$api}/openapi.yaml", token: null);
 Assert::same(200, $status);
 Assert::contains('openapi: "3.1.0"', $yaml);
+[$status, $page, $headers] = $http('GET', "{$api}/openapi", token: null);
+Assert::same(200, $status);
+Assert::contains('text/html', $headers['content-type']);
+Assert::contains('SwaggerUIBundle', $page, 'Swagger UI, next to the document');
 file_put_contents($root . '/temp/openapi.yaml', $yaml);
 file_put_contents($root . '/temp/openrpc.json', json_encode($rpc(['method' => 'rpc.discover'])[3]['result'], JSON_UNESCAPED_SLASHES));
 

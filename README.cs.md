@@ -22,7 +22,7 @@ curl -X POST -H "Authorization: Bearer token-of-ann" -H "Content-Type: applicati
      -d '{"take":10,"skip":0,"select":"id,name,owner(name),openTasks(id,canEdit)","sort":[{"field":"name","dir":"desc"}],"filter":{"logic":"and","filters":[{"field":"name","operator":"contains","value":"o"}]}}' \
      http://localhost:8000/api/v1/projects/query
 
-curl http://localhost:8000/api/v1/openapi.yaml
+curl http://localhost:8000/api/v1/openapi.yaml    # a Swagger UI na http://localhost:8000/api/v1/openapi
 
 curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"rpc.discover","id":1}' http://localhost:8000/rpc
 ```
