@@ -213,7 +213,7 @@ Assert::false(isset($json['priority']));
 Assert::same(201, $status);
 Assert::count(2, $json['ids']);
 $saved = $http('POST', "{$api}/projects/1/tasks/query", ['select' => 'priority', 'filter' => ['field' => 'id', 'value' => $json['ids'][0]]])[3];
-Assert::same(2, $saved['data'][0]['priority'], 'saved as sent');
+Assert::same([['priority' => 2]], $saved['data'], 'saved as sent, and nothing computed that was not asked for');
 
 $tasksBefore = $http('POST', "{$api}/projects/1/tasks/query", ['select' => 'id'])[3]['total'];
 
@@ -294,11 +294,13 @@ Assert::same('3.1.0', $openApi['openapi']);
 Assert::same('Sample API', $openApi['info']['title']);
 $schemas = $openApi['components']['schemas'];
 
-// An entity named in #[Response], without what's write-only
-Assert::same(['$ref' => '#/components/schemas/Project'], $openApi['paths']['/projects']['get']['responses'][200]['content']['application/json']['schema']['properties']['value']['properties']['data']['items']);
-Assert::true(isset($schemas['Project']['properties']['owner']));
-Assert::false(isset($schemas['User']['properties']['apiToken']));
-Assert::true(isset($schemas['Task']['properties']['canEdit']), 'what an event adds');
+// An entity named in #[Response] is documented as its resource, also through relations
+Assert::same(['$ref' => '#/components/schemas/ProjectResource'], $openApi['paths']['/projects']['get']['responses'][200]['content']['application/json']['schema']['properties']['value']['properties']['data']['items']);
+Assert::same([['$ref' => '#/components/schemas/AssigneeResource'], ['type' => 'null']], $schemas['ProjectResource']['properties']['owner']['anyOf']);
+Assert::same(['id', 'name'], array_keys($schemas['AssigneeResource']['properties']), 'nothing else of a user, the token least of all');
+Assert::same(['$ref' => '#/components/schemas/TaskResource'], $schemas['ProjectResource']['properties']['openTasks']['properties']['data']['items']);
+Assert::true(isset($schemas['TaskResource']['properties']['canEdit']), 'a computed field');
+Assert::false(isset($schemas['Project']), 'the entity itself is never shown');
 
 // A resource and its query
 $tasks = $openApi['paths']['/projects/{projectId}/tasks/query']['post'];

@@ -16,19 +16,11 @@ entityDatabase:
                 output: %appDir%/Entity
                 config: [%appDir%/../config/entities.neon]
 
-# What a query can reach of entities, for the whole application.
-# Controllers need no attribute, unless one of them differs.
+# Each entity is shown as its resource, found here, wherever a query reaches it.
+# One without a resource shows all its columns and no relations.
 apiQuery:
     maxPageSize: 100
-    entities:
-        App\Entity\Project:
-            relations: [owner, tasks, openTasks]
-        App\Entity\Task:
-            relations: [project, assignee]
-            computed:
-                canEdit: bool       # added by App\Api\QueryListener
-        App\Entity\User:
-            relations: []
+    resources: App\Api\Resource
 
 restApi:
     endpoints:
@@ -59,8 +51,6 @@ rpcApi:
 services:
     # A token instead of a session, for every request
     security.userStorage: App\Security\TokenStorage
-
-    - App\Api\QueryListener
 
     - App\Api\Rest\ProjectController
     - App\Api\Rest\TaskController

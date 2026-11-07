@@ -32,9 +32,9 @@ curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"
 | What | Where |
 |---|---|
 | Starting the API, and what's left to the configuration | [`www/index.php`](www/index.php), [`config/config.neon`](config/config.neon) |
-| A controller working with entities, needing no attribute for its query | [`ProjectController`](app/Api/Rest/ProjectController.php) |
-| A shared base controller, with events for every query | [`BaseController`](app/Api/Rest/BaseController.php) |
-| Access control and computed fields at every level | [`QueryListener`](app/Api/QueryListener.php) |
+| A controller needing no attribute for its query, as the resource of the entity holds | [`ProjectController`](app/Api/Rest/ProjectController.php) |
+| Access control holding everywhere, and relations to resources and to entities | `restrict()` of [`ProjectResource`](app/Api/Resource/ProjectResource.php) |
+| A field computed with a service, only when it's asked for | `canEdit()` of [`TaskResource`](app/Api/Resource/TaskResource.php) |
 | Clients shielded from the entity: a resource and a DTO with validation | [`TaskController`](app/Api/Rest/TaskController.php), [`TaskResource`](app/Api/Resource/TaskResource.php), [`CreateTask`](app/Api/Resource/CreateTask.php) |
 | Saving: POST, PUT, PATCH, and a collection in one transaction | `create()`, `replace()`, `change()` and `batch()` of [`TaskController`](app/Api/Rest/TaskController.php), [`ImportTasks`](app/Api/Resource/ImportTasks.php) |
 | A body streamed by the method, and a small file as a parameter | `attach()` and `picture()` of [`TaskController`](app/Api/Rest/TaskController.php) |

@@ -13,7 +13,10 @@ final class Bootstrap
         $root = dirname(__DIR__);
 
         $configurator = new Configurator();
-        $configurator->setDebugMode(false);
+        
+        // Pro produkci uprav / zakomentuj podle potreby
+        $configurator->setDebugMode('127.0.0.1');
+        $configurator->enableTracy($root . '/log');
         $configurator->setTempDirectory($root . '/temp');
         $configurator->addStaticParameters([
             'appDir' => __DIR__,

@@ -1,0 +1,1 @@
+d:\Aplikace\PHP-8.5\php -S 0.0.0.0:9079 -t www/

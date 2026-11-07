@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Api\Resource;
 
 use App\Entity\Task;
+use Nette\Security\User;
 use Phlox\ApiQuery\Attributes\Computed;
 use Phlox\ApiQuery\Attributes\Field;
 use Phlox\ApiQuery\Attributes\Resource;
@@ -33,5 +34,13 @@ final readonly class TaskResource
     public static function makeLabel(Task $task): string
     {
         return "#{$task->id} {$task->title}";
+    }
+
+    /**
+     * Computed only when a query asks for it, with the service it needs.
+     */
+    public static function canEdit(Task $task, User $user): bool
+    {
+        return $user->isInRole('admin') || $task->assigneeId === $user->getId();
     }
 }

@@ -5,7 +5,7 @@
     "license": "MIT",
     "repositories": [
         { "type": "path", "url": "../phlox-api-core", "options": { "versions": { "phloxcz/api-core": "0.2.x-dev" } } },
-        { "type": "path", "url": "../phlox-api-query", "options": { "versions": { "phloxcz/api-query": "0.2.x-dev" } } },
+        { "type": "path", "url": "../phlox-api-query", "options": { "versions": { "phloxcz/api-query": "0.3.x-dev" } } },
         { "type": "path", "url": "../phlox-entity-database", "options": { "versions": { "phloxcz/entity-database": "0.1.x-dev" } } },
         { "type": "path", "url": "../phlox-rest-api", "options": { "versions": { "phloxcz/rest-api": "0.2.x-dev" } } },
         { "type": "path", "url": "../phlox-rpc-api", "options": { "versions": { "phloxcz/rpc-api": "0.2.x-dev" } } }
@@ -19,7 +19,7 @@
         "nette/database": "^3.2",
         "nette/security": "^3.2",
         "phloxcz/api-core": "^0.2@dev",
-        "phloxcz/api-query": "^0.2@dev",
+        "phloxcz/api-query": "^0.3@dev",
         "phloxcz/entity-database": "^0.1@dev",
         "phloxcz/rest-api": "^0.2@dev",
         "phloxcz/rpc-api": "^0.2@dev",

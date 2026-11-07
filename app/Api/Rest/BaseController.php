@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Api\Rest;
 
-use App\Api\QueryListener;
 use Nette\DI\Attributes\Inject;
 use Phlox\ApiCore\ApiController;
 use Phlox\ApiCore\Attributes\NonApi;
@@ -17,17 +16,6 @@ abstract class BaseController extends ApiController
 
     #[Inject]
     public Explorer $db;
-
-    #[Inject]
-    public QueryListener $queryListener;
-
-    public function startup(): void
-    {
-        parent::startup();
-
-        $this->processor->onSelection[] = $this->queryListener->onSelection(...);
-        $this->processor->onProcessedEntity[] = $this->queryListener->onProcessedEntity(...);
-    }
 
     /**
      * What every response of this API is wrapped in.

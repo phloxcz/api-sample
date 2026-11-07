@@ -32,9 +32,9 @@ curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"
 | Co | Kde |
 |---|---|
 | Spuštění API a co zbývá na konfiguraci | [`www/index.php`](www/index.php), [`config/config.neon`](config/config.neon) |
-| Kontroler pracující s entitami, který pro dotaz nepotřebuje atribut | [`ProjectController`](app/Api/Rest/ProjectController.php) |
-| Společný základní kontroler s událostmi pro každý dotaz | [`BaseController`](app/Api/Rest/BaseController.php) |
-| Řízení přístupu a počítaná pole na každé úrovni | [`QueryListener`](app/Api/QueryListener.php) |
+| Kontroler, který pro dotaz nepotřebuje atribut, protože platí Resource entity | [`ProjectController`](app/Api/Rest/ProjectController.php) |
+| Řízení přístupu, které platí všude, a relace na Resource i na entity | `restrict()` v [`ProjectResource`](app/Api/Resource/ProjectResource.php) |
+| Pole dopočítané se službou, jen když si o něj dotaz řekne | `canEdit()` v [`TaskResource`](app/Api/Resource/TaskResource.php) |
 | Klienti odstínění od entity: Resource a DTO s validací | [`TaskController`](app/Api/Rest/TaskController.php), [`TaskResource`](app/Api/Resource/TaskResource.php), [`CreateTask`](app/Api/Resource/CreateTask.php) |
 | Ukládání: POST, PUT, PATCH a kolekce v jedné transakci | `create()`, `replace()`, `change()` a `batch()` v [`TaskController`](app/Api/Rest/TaskController.php), [`ImportTasks`](app/Api/Resource/ImportTasks.php) |
 | Tělo streamované metodou a malý soubor jako parametr | `attach()` a `picture()` v [`TaskController`](app/Api/Rest/TaskController.php) |

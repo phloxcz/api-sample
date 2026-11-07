@@ -17,7 +17,7 @@ use Phlox\RestApi\Attributes\Response;
 use Phlox\RestApi\Attributes\Route;
 
 /**
- * Projects, working right with entities: what a query can reach is in `apiQuery.entities`.
+ * Projects, queried with no attribute: ProjectResource stands for the entity, and limits what's read.
  */
 #[Route('projects')]
 #[Authorize]
