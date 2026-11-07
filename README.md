@@ -38,10 +38,10 @@ curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"
 | Clients shielded from the entity: a resource and a DTO with validation | [`TaskController`](app/Api/Rest/TaskController.php), [`TaskResource`](app/Api/Resource/TaskResource.php), [`CreateTask`](app/Api/Resource/CreateTask.php) |
 | Saving: POST, PUT, PATCH, and a collection in one transaction | `create()`, `replace()`, `change()` and `batch()` of [`TaskController`](app/Api/Rest/TaskController.php), [`ImportTasks`](app/Api/Resource/ImportTasks.php) |
 | A body streamed by the method, and a small file as a parameter | `attach()` and `picture()` of [`TaskController`](app/Api/Rest/TaskController.php) |
-| A file from an HTML form, and a header | `document()` of [`TaskController`](app/Api/Rest/TaskController.php) |
+| A file from an HTML form, by POST or PUT, and a header | `document()` of [`TaskController`](app/Api/Rest/TaskController.php) |
 | A method writing the response itself, from a selection narrowed by a query | [`ReportController`](app/Api/Rest/ReportController.php) |
 | Responses described by objects: a page in an envelope, a list, counts by a key | `#[Response]` in [`ProjectController`](app/Api/Rest/ProjectController.php) and [`TaskController`](app/Api/Rest/TaskController.php) |
-| Every response of the smoke test checked against the documentation | [`ResponseChecker`](tests/ResponseChecker.php) |
+| Every response of the smoke test checked against the documentation | `OpenApiChecker` and `OpenRpcChecker` in [`SmokeTest`](tests/SmokeTest.phpt) |
 | Logging in by a token, with no session | [`TokenStorage`](app/Security/TokenStorage.php) |
 | The same query over JSON-RPC | [`StatsController`](app/Api/Rpc/StatsController.php) |
 | Secrets a query can't reach, and a condition of a relation | [`config/entities.neon`](config/entities.neon) |

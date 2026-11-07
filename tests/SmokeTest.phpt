@@ -6,6 +6,9 @@
 
 declare(strict_types=1);
 
+use Phlox\ApiCore\Testing\SchemaValidator;
+use Phlox\RestApi\Testing\OpenApiChecker;
+use Phlox\RpcApi\Testing\OpenRpcChecker;
 use Tester\Assert;
 
 $root = dirname(__DIR__);
@@ -31,15 +34,15 @@ for ($i = 0; $i < 50 && !@fsockopen('127.0.0.1', $port); $i++) {
     usleep(100_000);
 }
 
-require __DIR__ . '/ResponseChecker.php';
-
 $api = '/api/v1';
-$checker = null;
+$openApiChecker = null;
+$openRpcChecker = null;
+$mismatches = [];
 
 /**
  * @return array{int, string, array<string, string>, mixed}
  */
-$http = static function (string $method, string $path, mixed $body = null, ?string $token = 'token-of-ann', string $type = 'application/json', array $headers = []) use ($port, $api, &$checker): array {
+$http = static function (string $method, string $path, mixed $body = null, ?string $token = 'token-of-ann', string $type = 'application/json', array $headers = []) use ($port, &$openApiChecker, &$openRpcChecker, &$mismatches): array {
     if ($token !== null) {
         $headers[] = "Authorization: Bearer {$token}";
     }
@@ -67,21 +70,18 @@ $http = static function (string $method, string $path, mixed $body = null, ?stri
     $result = [(int) ($status[1] ?? 0), (string) $text, $received, json_decode((string) $text, true)];
 
     // Every response of the API is checked against its documentation
-    if ($checker !== null && str_starts_with($path, $api)) {
-        $checker->checkRest($method, $path, $result[0], $received, $result[1]);
+    if ($openApiChecker !== null) {
+        array_push($mismatches, ...$openApiChecker->check($method, $path, $result[0], $received['content-type'] ?? null, $result[1]));
     }
-    if ($checker !== null && $path === '/rpc' && is_array($body) && ($body['method'] ?? '') !== 'rpc.discover' && is_array($result[3]) && array_key_exists('result', $result[3])) {
-        $checker->checkRpc($body['method'], $result[3]['result']);
+    if ($openRpcChecker !== null && $path === '/rpc' && is_array($body) && ($body['method'] ?? '') !== 'rpc.discover' && is_array($result[3]) && array_key_exists('result', $result[3])) {
+        array_push($mismatches, ...$openRpcChecker->check($body['method'], $result[3]['result']));
     }
 
     return $result;
 };
 
-$checker = new ResponseChecker(
-    $http('GET', "{$api}/openapi.json", token: null)[3],
-    $http('POST', '/rpc', ['jsonrpc' => '2.0', 'method' => 'rpc.discover', 'id' => 1], token: null)[3]['result'],
-    $api,
-);
+$openApiChecker = new OpenApiChecker($http('GET', "{$api}/openapi.json", token: null)[3], $api);
+$openRpcChecker = new OpenRpcChecker($http('POST', '/rpc', ['jsonrpc' => '2.0', 'method' => 'rpc.discover', 'id' => 1], token: null)[3]['result']);
 
 // --- Entities, with the wrapper of the application
 
@@ -259,6 +259,10 @@ $multipart = static fn(array $parts): string => implode('', array_map(
 Assert::same(200, $status);
 Assert::same(['task' => 1, 'name' => 'report.pdf', 'bytes' => 6, 'requestId' => 'r-42', 'note' => 'Signed'], $json);
 
+[$status, , , $json] = $http('PUT', "{$api}/projects/1/tasks/1/document", $multipart([['file', '%PDF-12', 'new.pdf']]), type: 'multipart/form-data; boundary=x');
+Assert::same(200, $status, 'a form of PUT, which PHP does not read on its own');
+Assert::same(['task' => 1, 'name' => 'new.pdf', 'bytes' => 7, 'requestId' => null], $json);
+
 [$status, , , $json] = $http('POST', "{$api}/projects/1/tasks/1/document", $multipart([['note', 'No file']]), type: 'multipart/form-data; boundary=x');
 Assert::same(422, $status);
 Assert::same(['file' => 'is required.'], $json['error']['fields']);
@@ -332,13 +336,14 @@ Assert::same(404, $status);
 
 // --- What came matches what the documents say
 
-Assert::same([], $checker->errors);
-Assert::true($checker->checked >= 35, "only {$checker->checked} responses checked");
+Assert::same([], $mismatches);
+$checked = $openApiChecker->checked + $openRpcChecker->checked;
+Assert::true($checked >= 35, "only {$checked} responses checked");
 
 // It does see a difference
 $page = $openApi['paths']['/projects']['get']['responses'][200]['content']['application/json']['schema'];
-Assert::same([], ResponseChecker::validate(['value' => ['data' => [], 'total' => 0, 'page' => 1, 'pageSize' => 10, 'from' => null, 'to' => null]], $page, $openApi, 'x'));
+Assert::same([], SchemaValidator::validate(['value' => ['data' => [], 'total' => 0, 'page' => 1, 'pageSize' => 10, 'from' => null, 'to' => null]], $page, $openApi, 'x'));
 Assert::same(
     ["x.value: 'from' is missing", 'x.value.data[0].name: 5 is not string', 'x.value.total: "2" is not integer'],
-    ResponseChecker::validate(['value' => ['data' => [['name' => 5]], 'total' => '2', 'page' => 1, 'pageSize' => 10, 'to' => null]], $page, $openApi, 'x'),
+    SchemaValidator::validate(['value' => ['data' => [['name' => 5]], 'total' => '2', 'page' => 1, 'pageSize' => 10, 'to' => null]], $page, $openApi, 'x'),
 );

@@ -145,9 +145,10 @@ class TaskController extends BaseController
     }
 
     /**
-     * Takes a file from an HTML form, with a note and the ID of the request.
+     * Takes a file from an HTML form, with a note and the ID of the request; PUT replaces it.
      */
     #[HttpPost]
+    #[HttpPut]
     #[Route('{id:int}/document')]
     #[Response(200, new Shape(['task' => 'int', 'name' => 'string', 'bytes' => 'int', 'requestId' => '?string', 'note?' => 'string']))]
     public function document(
